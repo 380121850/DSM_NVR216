@@ -1,0 +1,205 @@
+bootcmd=run syno_showlogo; run syno_bootargs; run bootspi
+bootdelay=1
+baudrate=115200
+ethaddr=00:00:23:34:45:66
+ipaddr=192.168.1.10
+serverip=192.168.1.2
+netmask=255.255.254.0
+bootfile="uImage"
+bootspi=sf probe 0;sf read ${loadaddr_kernel} ${spi_pt_addr_kernel} ${spi_pt_size_kernel};sf read ${loadaddr_rootfs} ${spi_pt_addr_fs} ${spi_pt_size_fs};bootm ${loadaddr_kernel} ${loadaddr_rootfs}; 
+spi_pt_addr_logo=0x0080000
+spi_pt_size_logo=14315
+spi_pt_addr_kernel=0x00B0000
+spi_pt_size_kernel=0x02F0000
+spi_pt_addr_fs=0x03A0000
+spi_pt_size_fs=0x0430000
+syno_showlogo=setvobg 0 0x00000000;startvo 0 36 10;setenv jpeg_addr 0xB8000000;setenv vobuf 0xB9000000;sf probe 0;sf read ${jpeg_addr} ${spi_pt_addr_logo} ${spi_pt_size_logo};decjpg; syno_startgx 0 ${vobuf};
+loadaddr_kernel=0x82000000
+loadaddr_rootfs=0x92000000
+syno_mem=640M
+syno_boot_dev=/dev/md0 rw init=/sbin/init
+syno_mtd=hi_sfc:704k(RedBoot),3008k(zImage),4288k(rd.gz),64k(vendor),64k(RedBoot+Config),-(FIS+directory)
+syno_hw_version=NVR216
+syno_phys_memsize=1024
+syno_extra_args= 
+syno_mtd_layout=hi_sfc:704k(RedBoot),3008k(zImage),4288k(rd.gz),64k(vendor),64k(RedBoot+Config),-(FIS+directory)
+syno_hdd_powerup_seq=2
+syno_net_if_num=1
+syno_bootargs=setenv bootargs console=ttyS0,115200 ip=off mem=${syno_mem} syno_hw_version=${syno_hw_version} syno_phys_memsize=${syno_phys_memsize} initrd=${loadaddr_kernel} root=${syno_boot_dev} mtdparts=${syno_mtd_layout} hd_power_on_seq=${syno_hdd_powerup_seq} ihd_num=${syno_hdd_powerup_seq} netif_num=${syno_net_if_num} flash_size=8 ${syno_extra_args} 
+vo_luma=70
+vo_contrast=50
+jpeg_size=82709
+syno_clear_env=sf probe 0; sf erase 0x007E0000 0x10000
+stdin=serial
+stdout=serial
+stderr=serial
+verify=n
+ver=U-Boot 2010.06 (Jun 27 2017 - 11:57:38)
+jpeg_addr=0xB8000000
+vobuf=0xB9000000
+
+bootargs=console=ttyS0,115200 ip=off mem=320M syno_hw_version=NVR216 syno_phys_memsize=512 initrd=0x82000000 root=/dev/md0 rw init=/sbin/init mtdparts=hi_sfc:704k(RedBoot),3008k(zImage),4288k(rd.gz),64k(vendor),64k(RedBoot+Config),-(FIS+directory) hd_power_on_seq=2 ihd_num=2 netif_num=2 flash_size=8
+
+setenv bootargs console=ttyS0,115200 mem=320M syno_hw_version=NVR216 syno_phys_memsize=512 initrd=0x82000000 root=/dev/md0 rw init=/sbin/init mtdparts=hi_sfc:704k(RedBoot),3008k(zImage),4288k(rd.gz),64k(vendor),64k(RedBoot+Config),-(FIS+directory) hd_power_on_seq=2 ihd_num=5 netif_num=1 flash_size=16;
+
+tftp 0x82000000 uImage;tftp 0x92000000 rd.bin;bootm 0x82000000 0x92000000
+
+
+setenv bootcmd 'sf probe 0;sf read 82000000 0x000B0000 0x002f0000;sf read 84000000 0x003C0000 0x00430000;bootm 0x82000000 0x84000000'
+
+Creating 6 MTD partitions on "hi_sfc":
+0x000000000000-0x0000000b0000 : "RedBoot"
+0x0000000b0000-0x0000003a0000 : "zImage"
+0x0000003a0000-0x0000007d0000 : "rd.gz"
+0x0000007d0000-0x0000007e0000 : "vendor"
+0x0000007e0000-0x0000007f0000 : "RedBoot+Config"
+
+dd if=rd.bin of=ramdisk.lzma bs=64 skip=1
+
+lzma -d ramdisk.lzma
+
+mkdir rootfs
+cd rootfs
+
+sudo cpio -idv < ../ramdisk
+
+find . |cpio -ov -H newc |lzma >../ramdisk.lzma
+
+mkimage -n "synology_hi3535_nvr216 15284" -A arm -O linux -T ramdisk -C none -a 0x44000000 -e 0x44000000 -d ramdisk.lzma rd.bin
+
+
+
+hi_sfc:320K(boot),    4736K(romfs),5824K(usr),  1536K(web), 3072K(custom),       128K(logo),    768K(mtd)
+hi_sfc:256K(boot) 64K(ENV),           4736K(romfs),5824K(usr),  1536K(web), 3072K(custom),       128K(logo),    768K(mtd)
+
+hi_sfc:512k(RedBoot)  128K(logo)  64K, 3008k(zImage),4288k(rd.gz),64k(vendor),64k(RedBoot+Config),-(FIS+directory)
+
+hi_sfc:704k(RedBoot),                  3008k(zImage),4288k(rd.gz),64k(vendor),64k(RedBoot+Config),-(FIS+directory)
+
+
+  以16M SPI Flash为例。
+    1）地址空间说明
+        |      1M       |      3008k    |      11M      |
+        |---------------|---------------|---------------|
+        |     boot      |     zImage    |     rootfs    |
+
+
+        以下的操作均基于图示的地址空间分配，您也可以根据实际情况进行调整。
+    2）烧写u-boot
+         sf probe 0
+         mw.b 82000000 ff 100000
+         tftp 0x82000000 u-boot-hi3535.bin
+         sf probe 0
+         sf erase 0 100000
+         sf write 82000000 0 100000	
+         reset 
+		 
+    3）烧写内核 (zImage == uImage)
+         mw.b 0x82000000 ff 0x002f0000
+         tftp 0x82000000 zImage
+         sf probe 0
+         sf erase 0x000B0000 0x002f0000
+         sf write 0x82000000 0x000B0000 0x002f0000
+    4)烧写文件系统
+        mw.b 0x82000000 ff 0x00430000
+        tftp 0x82000000 rd.bin
+        sf erase 0x003C0000 0x00430000
+        sf write 0x82000000 0x003C0000 0x00430000
+		
+
+mw.b 0x82000000 ff 0x002f0000;tftp 0x82000000 zImage;sf probe 0;sf erase 0x000B0000 0x002f0000;sf write 0x82000000 0x000B0000 0x002f0000
+
+mw.b 0x82000000 ff 0x00430000;tftp 0x82000000 rd.bin;sf probe 0;sf erase 0x003C0000 0x00430000;sf write 0x82000000 0x003C0000 0x00430000
+	
+mw.b 0x82000000 ff 0x00010000;sf probe 0;sf read 0x82000000 0x00040000 0x00010000;sf erase 0x00800000 0x00010000;sf write 0x82000000 0x00800000 0x00010000
+
+sf probe 0;sf erase 0x007D0000 0x00010000;sf write 0x82000000 0x007D0000 0x00010000
+	
+	 000B3F00 00014BFF
+	 mw.l 0x82000000 0x003F0B00
+	 mw.l 0x82000004 0xFF4B0100
+	 
+synochecksum-emu1 VERSION zImage updater uboot_NVR216.bin uboot_do_upd.sh rd.bin hda1.tgz indexdb.txz synohdpack_img.txz \
+packages/SurveillanceStation-hi3535-8.1.1-5408.spk packages/FileStation-hi3535-1.1.4-0123.spk \
+texts/chs/strings texts/cht/strings texts/csy/strings texts/dan/strings texts/enu/strings texts/fre/strings \
+texts/ger/strings texts/hun/strings texts/ita/strings texts/jpn/strings texts/krn/strings texts/nld/strings \
+texts/nor/strings texts/plk/strings texts/ptb/strings texts/ptg/strings texts/rus/strings texts/spn/strings \
+texts/sve/strings texts/tha/strings texts/trk/strings > checksum.syno
+
+
+synochecksum-emu1 VERSION  updater hda1.tgz indexdb.txz synohdpack_img.txz \
+packages/SurveillanceStation-hi3535-8.1.1-5408.spk packages/FileStation-hi3535-1.1.4-0123.spk \
+texts/chs/strings texts/cht/strings texts/csy/strings texts/dan/strings texts/enu/strings texts/fre/strings \
+texts/ger/strings texts/hun/strings texts/ita/strings texts/jpn/strings texts/krn/strings texts/nld/strings \
+texts/nor/strings texts/plk/strings texts/ptb/strings texts/ptg/strings texts/rus/strings texts/spn/strings \
+texts/sve/strings texts/tha/strings texts/trk/strings > checksum.syno
+
+mkdir -p /nfs;ifconfig eth0 192.168.50.207;mount -t nfs 192.168.50.100:/volume3/docker/ /nfs/
+
+BusyBox v1.16.1 (2018-05-10 10:54:05 CST) multi-call binary.
+Copyright (C) 1998-2009 Erik Andersen, Rob Landley, Denys Vlasenko
+and others. Licensed under GPLv2.
+See source distribution for full notice.
+
+Usage: busybox [function] [arguments]...
+   or: function [arguments]...
+
+	BusyBox is a multi-call binary that combines many common Unix
+	utilities into a single executable.  Most people will create a
+	link to busybox for each function they wish to use and BusyBox
+	will act like whatever it was invoked as.
+
+Currently defined functions:
+	[, [[, , , , , , chattr, chgrp, , ,
+	, , , , , , , , , , ,
+	, egrep, , , , , fgrep, , ,
+	get_key_value, , , gunzip, , , , httpd,
+	, inetd, , , ip, ip, ipcalc, , , ,
+	klogd, , , logger, , , lsattr, , , ,
+	, , , , , nslookup, , , , ,
+	, , , , , , , , , , ,
+	, , , synodd, , , , , test,
+	, , , , , , unxz, , , , ,
+	xargs, xz, xzcat, , zcat
+	
+	
+	
+	adjtimex, arch, arp, arping, ash, awk, base64, basename, bc, beep,
+	blkdiscard, blkid, blockdev, bootchartd, cal, cat, chat, chmod, chown,
+	chpasswd, chroot, cksum, cmp, cp, crond, crontab, cryptpw, cut, date,
+	dc, dd, depmod, devmem, df, diff, dirname, dmesg, dnsd, dnsdomainname,
+	du, echo, env, ether-wake, expr, factor, false, fdisk, fgconsole, find,
+	flash_eraseall, flash_lock, flash_unlock, flashcp, free, fstrim, fsync,
+	ftpget, ftpput, fuser, getty, grep, groups, halt, head, hexedit,
+	hostid, hostname, hwclock, i2cdetect, i2cdump, i2cget, i2cset,
+	i2ctransfer, id, ifconfig, init, inotifyd, insmod, iostat, kill,
+	killall, less, linux32, linux64, linuxrc, ln, login, logname, ls,
+	lsmod, lsof, lspci, lsscsi, lsusb, makedevs, md5sum, mdev, mkdir,
+	mkdosfs, mke2fs, mkfifo, mkfs.vfat, mknod, mkpasswd, mkswap, mktemp,
+	modinfo, modprobe, more, mount, mountpoint, mv, netstat, nice, nologin,
+	nuke, passwd, paste, patch, pidof, ping, pivot_root, pkill, poweroff,
+	printenv, printf, ps, pwd, rdate, rdev, readprofile, reboot, renice,
+	reset, resize, resume, rev, rm, rmdir, rmmod, route, rtcwake, run-init,
+	runlevel, rx, script, scriptreplay, sed, seq, setarch, setconsole,
+	setkeycodes, setlogcons, setserial, setsid, sh, sha1sum, sha256sum,
+	sha3sum, sha512sum, showkey, sleep, smemcap, sort, split, stat,
+	strings, stty, su, sulogin, sum, swapoff, swapon, switch_root, sync,
+	sysctl, syslogd, tail, tar, taskset, tee, telnetd, tftp, time, timeout,
+	top, touch, tr, true, truncate, tty, ttysize, udhcpc, uevent, umount,
+	uname, uniq, unlink, unshare, uptime, usleep, uudecode, uuencode, vi,
+	vlock, volname, wall, watch, watchdog, wc, wget, which, who, whoami,
+	yes
+
+docker run -it -v /volume3/docker/opt/dsm/spksrc:/spksrc --name spksrc synocommunity/spksrc /bin/bash
+
+
+
+Synology DS Default Reset Util.
+Usage: synodsdefault
+  --reset-config Reset DSM configs.
+  --reinstall Reset to reinstall DSM.
+  --factory-default Reset to brand new DSM. Include remove all data volumes.
+  --help Show this help.
+root@LeeStationNVR:/# sudo /usr/syno/sbin/synodsdefault ==fact
+root@LeeStationNVR:/# sudo /usr/syno/sbin/synodsdefault --reinstall
+Success.
