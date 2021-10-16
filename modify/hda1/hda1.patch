@@ -1,0 +1,215 @@
+diff -uNr hda1_src/VERSION hda1_modify/VERSION
+--- hda1_src/VERSION	1970-01-01 00:00:00.000000000 +0000
++++ hda1_modify/VERSION	2021-10-14 14:40:52.000000000 +0000
+@@ -0,0 +1,13 @@
++majorversion="6"
++minorversion="1"
++productversion="6.1.7"
++buildphase="GM"
++buildnumber="15284"
++smallfixnumber="0"
++builddate="2018/05/19"
++buildtime="09:18:51"
++unique="synology_hi3535_nvr216"
++extractsize=609468
++indexdbextractsize=4664
++synohdpackimgextractsize=17624
++packageextractsize=329272
+File hda1_src/dev/console is a character special file while file hda1_modify/dev/console is a character special file
+File hda1_src/dev/net/tun is a character special file while file hda1_modify/dev/net/tun is a character special file
+diff -uNr hda1_src/etc.defaults/passwd hda1_modify/etc.defaults/passwd
+--- hda1_src/etc.defaults/passwd	2017-02-17 08:24:46.000000000 +0000
++++ hda1_modify/etc.defaults/passwd	2021-10-14 14:41:59.000000000 +0000
+@@ -1,4 +1,4 @@
+-root:x:0:0::/root:/bin/ash
++root::0:0::/root:/bin/ash
+ system:x:1:1::/usr/syno/synoman:/usr/bin/nologin
+ daemon:x:2:2::/:/bin/sh
+ lp:x:7:7::/var/spool/lpd:/bin/sh
+@@ -16,5 +16,5 @@
+ dovecot:x:143:143::/dev/null:/usr/bin/nologin
+ ldap:x:439:439::/var/lib/openldap:/usr/bin/nologin
+ http:x:1023:1023::/var/services/web:/bin/false
+-admin:x:1024:100:System default user:/var/services/homes/admin:/bin/sh
++admin::1024:100:System default user:/var/services/homes/admin:/bin/sh
+ guest:x:1025:100:Guest:/nonexist:/usr/bin/nologin
+diff -uNr hda1_src/etc.defaults/rc.pinctrl_hi3535_aic31 hda1_modify/etc.defaults/rc.pinctrl_hi3535_aic31
+--- hda1_src/etc.defaults/rc.pinctrl_hi3535_aic31	2018-05-10 04:10:59.000000000 +0000
++++ hda1_modify/etc.defaults/rc.pinctrl_hi3535_aic31	2021-10-14 15:26:12.000000000 +0000
+@@ -110,5 +110,5 @@
+ himm 0x200f0194 0x2
+ 
+ 
+-
++/etc.defaults/sysctl_asic.sh
+ 
+diff -uNr hda1_src/etc.defaults/synoinfo.conf hda1_modify/etc.defaults/synoinfo.conf
+--- hda1_src/etc.defaults/synoinfo.conf	2018-05-19 01:20:30.000000000 +0000
++++ hda1_modify/etc.defaults/synoinfo.conf	2021-10-16 14:31:59.000000000 +0000
+@@ -30,12 +30,12 @@
+ support_fw_security="yes"
+ support_directory_service="yes"
+ support_power_schedule="yes"
+-support_buzzer="yes"
++support_buzzer="no"
+ support_poweroff="yes"
+ supporttrustdomain="yes"
+ support_ipsec="yes"
+ supportMFP="yes"
+-support_synoacl="yes"
++support_synoacl="no"
+ support_wireless_number="2"
+ supportrcpower="yes"
+ supportext4="yes"
+@@ -91,7 +91,7 @@
+ auto_poweroff_timer="0"
+ enableguest="no"
+ usbbkp="yes"
+-usbcopy="no"
++usbcopy="yes"
+ netbkp="no"
+ supportmediaservice="yes"
+ runmediaservice="no"
+@@ -127,7 +127,7 @@
+ maxaccounts="1024"
+ maxgroups="256"
+ maxshares="256"
+-maxdisks="2"
++maxdisks="7"
+ maxprinters="2"
+ maxlogsize="64"
+ 
+@@ -224,7 +224,7 @@
+ enable_fan_debug="0x0"
+ 
+ # Add key for support fan model
+-support_fan="yes"
++support_fan="no"
+ 
+ # Disk options
+ BS_Thr_Enable="yes"
+@@ -247,11 +247,11 @@
+ sdcopy="no"
+ disable_join_cms_host="yes"
+ supportraidcross="yes"
+-disable_exfat="yes"
++disable_exfat="no"
+ supportsystemperature="yes"
+ support_syno_hybrid_raid="yes"
+ maxservices="256"
+-support_fan_adjust_dual_mode="yes"
++support_fan_adjust_dual_mode="no"
+ satadeepsleeptimer="1"
+ is_business_model="no"
+ esataportcfg="0x4"
+diff -uNr hda1_src/etc.defaults/sysctl_asic.sh hda1_modify/etc.defaults/sysctl_asic.sh
+--- hda1_src/etc.defaults/sysctl_asic.sh	1970-01-01 00:00:00.000000000 +0000
++++ hda1_modify/etc.defaults/sysctl_asic.sh	2021-10-14 15:19:54.000000000 +0000
+@@ -0,0 +1,64 @@
++#!/bin/sh
++
++#Andy
++#sata control
++himm 0x200f0084 0x1
++himm 0x201f0400 0x50
++himm 0x201f0100 0x40
++
++#USB3.0 control
++#himm 0x200f00EC 0x0
++#himm 0x200f00F0 0x0
++#himm 0x201A0400 0x30
++#himm 0x201A00C0 0x10
++himm 0x200f00EC 0x1
++himm 0x200f00F0 0x1
++himm 0x20120084 0x00040fc0
++
++#linux net
++himm 0x12020014 0x5
++himm 0x12020010 0x1743
++himm 0x12020014 0x100
++himm 0x12020010 0x1783
++
++#HDMI
++himm 0x200F00F4 0x1
++himm 0x200F00F8 0x1
++himm 0x200F00FC 0x1
++himm 0x200F0100 0x1
++
++#sata
++himm 0x12010148 0x376eb8;
++himm 0x1201014c 0x0a280;
++himm 0x12010174 0x6f180000;
++himm 0x12010174 0x6f390000;
++himm 0x12010174 0x6f5a0000;
++himm 0x12010174 0x6f390000;
++himm 0x12010174 0x6f180000;
++himm 0x12010174 0x6f390000;
++himm 0x12010174 0x6f5a0000;
++
++himm 0x120101c8 0x376eb8;
++himm 0x120101cc 0x0a280;
++himm 0x120101f4 0x6f180000;
++himm 0x120101f4 0x6f390000;
++himm 0x120101f4 0x6f5a0000;
++himm 0x120101f4 0x6f390000;
++himm 0x120101f4 0x6f180000;
++himm 0x120101f4 0x6f390000;
++himm 0x120101f4 0x6f5a0000;
++
++himm 0x12010248 0x376eb8;
++himm 0x1201024c 0x0a280;
++himm 0x12010274 0x6f180000;
++himm 0x12010274 0x6f390000;
++himm 0x12010274 0x6f5a0000;
++himm 0x12010274 0x6f390000;
++himm 0x12010274 0x6f180000;
++himm 0x12010274 0x6f390000;
++himm 0x12010274 0x6f5a0000;
++
++himm 0x12010174 0x0E390000;
++himm 0x120101f4 0x0E390000;
++himm 0x12010274 0x0E390000;
++
+Binary files hda1_src/lib/modules/cdc-acm.ko and hda1_modify/lib/modules/cdc-acm.ko differ
+Binary files hda1_src/lib/modules/ehci-hcd.ko and hda1_modify/lib/modules/ehci-hcd.ko differ
+Binary files hda1_src/lib/modules/ohci-hcd.ko and hda1_modify/lib/modules/ohci-hcd.ko differ
+Binary files hda1_src/lib/modules/usb-storage.ko and hda1_modify/lib/modules/usb-storage.ko differ
+Binary files hda1_src/lib/modules/xhci-hcd.ko and hda1_modify/lib/modules/xhci-hcd.ko differ
+Binary files hda1_src/usr/lib/modules/cdc-acm.ko and hda1_modify/usr/lib/modules/cdc-acm.ko differ
+Binary files hda1_src/usr/lib/modules/ehci-hcd.ko and hda1_modify/usr/lib/modules/ehci-hcd.ko differ
+Binary files hda1_src/usr/lib/modules/ohci-hcd.ko and hda1_modify/usr/lib/modules/ohci-hcd.ko differ
+Binary files hda1_src/usr/lib/modules/usb-storage.ko and hda1_modify/usr/lib/modules/usb-storage.ko differ
+Binary files hda1_src/usr/lib/modules/xhci-hcd.ko and hda1_modify/usr/lib/modules/xhci-hcd.ko differ
+diff -uNr hda1_src/usr/syno/etc.defaults/hi3535ModuleInstall.sh hda1_modify/usr/syno/etc.defaults/hi3535ModuleInstall.sh
+--- hda1_src/usr/syno/etc.defaults/hi3535ModuleInstall.sh	2018-05-10 04:16:07.000000000 +0000
++++ hda1_modify/usr/syno/etc.defaults/hi3535ModuleInstall.sh	2021-10-14 15:44:15.000000000 +0000
+@@ -15,7 +15,7 @@
+ 
+ insert_audio()
+ {
+-    insmod ${LIB_MODULE_DIR}extdrv/tlv_320aic31.ko > /dev/null
++    #insmod ${LIB_MODULE_DIR}extdrv/tlv_320aic31.ko > /dev/null
+     insmod ${LIB_MODULE_DIR}acodec.ko
+     insmod ${LIB_MODULE_DIR}hi3535_aio.ko
+     insmod ${LIB_MODULE_DIR}hi3535_ai.ko
+@@ -32,7 +32,7 @@
+     rmmod ${LIB_MODULE_DIR}hi3535_ai
+     rmmod ${LIB_MODULE_DIR}hi3535_aio
+     rmmod ${LIB_MODULE_DIR}acodec
+-    rmmod ${LIB_MODULE_DIR}tlv_320aic31
++    #rmmod ${LIB_MODULE_DIR}tlv_320aic31
+ }
+ 
+ insert_ko()
+@@ -43,7 +43,10 @@
+     # sh ./pinctrl_hi3535_aic31.sh > /dev/null
+ 
+ # Linux 640MB, and 384MB for MMZ
+-    insmod ${LIB_MODULE_DIR}mmz.ko mmz=anonymous,0,0xA8000000,384M anony=1 || report_error
++    #insmod ${LIB_MODULE_DIR}mmz.ko mmz=anonymous,0,0xA8000000,384M anony=1 || report_error
++    
++# Linux 320MB, and MB for MMZ
++    insmod ${LIB_MODULE_DIR}mmz.ko mmz=anonymous,0,0x94000000,192M anony=1 || report_error
+     insmod ${LIB_MODULE_DIR}hiuser.ko
+     insmod ${LIB_MODULE_DIR}hi3535_base.ko
+     insmod ${LIB_MODULE_DIR}hi3535_sys.ko

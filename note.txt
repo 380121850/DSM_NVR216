@@ -134,7 +134,7 @@ texts/ger/strings texts/hun/strings texts/ita/strings texts/jpn/strings texts/kr
 texts/nor/strings texts/plk/strings texts/ptb/strings texts/ptg/strings texts/rus/strings texts/spn/strings \
 texts/sve/strings texts/tha/strings texts/trk/strings > checksum.syno
 
-mkdir -p /nfs;ifconfig eth0 192.168.50.207;mount -t nfs 192.168.50.100:/volume3/docker/ /nfs/
+mkdir -p /nfs;ifconfig eth0 192.168.50.125;mount -t nfs 192.168.50.100:/volume3/docker/ /nfs/
 
 BusyBox v1.16.1 (2018-05-10 10:54:05 CST) multi-call binary.
 Copyright (C) 1998-2009 Erik Andersen, Rob Landley, Denys Vlasenko
