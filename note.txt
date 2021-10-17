@@ -54,70 +54,29 @@ Creating 6 MTD partitions on "hi_sfc":
 0x0000007d0000-0x0000007e0000 : "vendor"
 0x0000007e0000-0x0000007f0000 : "RedBoot+Config"
 
-dd if=rd.bin of=ramdisk.lzma bs=64 skip=1
+dd if=rd.bin of=ramdisk.lzma bs=64 skip=1;lzma -d ramdisk.lzma
 
-lzma -d ramdisk.lzma
-
-mkdir rootfs
-cd rootfs
-
-sudo cpio -idv < ../ramdisk
+mkdir -p rootfs;cd rootfs;sudo cpio -idv < ../ramdisk
 
 find . |cpio -ov -H newc |lzma >../ramdisk.lzma
 
 mkimage -n "synology_hi3535_nvr216 15284" -A arm -O linux -T ramdisk -C none -a 0x44000000 -e 0x44000000 -d ramdisk.lzma rd.bin
 
+sudo diff -uNr --no-dereference  rd_src/rootfs rd_modify/rootfs > rd.patch
 
+sudo patch -p2 < ../../rd.patch
 
-hi_sfc:320K(boot),    4736K(romfs),5824K(usr),  1536K(web), 3072K(custom),       128K(logo),    768K(mtd)
-hi_sfc:256K(boot) 64K(ENV),           4736K(romfs),5824K(usr),  1536K(web), 3072K(custom),       128K(logo),    768K(mtd)
+sudo diff -uNr hda1_src  hda1_modify > hda1.patch
 
-hi_sfc:512k(RedBoot)  128K(logo)  64K, 3008k(zImage),4288k(rd.gz),64k(vendor),64k(RedBoot+Config),-(FIS+directory)
-
-hi_sfc:704k(RedBoot),                  3008k(zImage),4288k(rd.gz),64k(vendor),64k(RedBoot+Config),-(FIS+directory)
-
-
-  以16M SPI Flash为例。
-    1）地址空间说明
-        |      1M       |      3008k    |      11M      |
-        |---------------|---------------|---------------|
-        |     boot      |     zImage    |     rootfs    |
-
-
-        以下的操作均基于图示的地址空间分配，您也可以根据实际情况进行调整。
-    2）烧写u-boot
-         sf probe 0
-         mw.b 82000000 ff 100000
-         tftp 0x82000000 u-boot-hi3535.bin
-         sf probe 0
-         sf erase 0 100000
-         sf write 82000000 0 100000	
-         reset 
-		 
-    3）烧写内核 (zImage == uImage)
-         mw.b 0x82000000 ff 0x002f0000
-         tftp 0x82000000 zImage
-         sf probe 0
-         sf erase 0x000B0000 0x002f0000
-         sf write 0x82000000 0x000B0000 0x002f0000
-    4)烧写文件系统
-        mw.b 0x82000000 ff 0x00430000
-        tftp 0x82000000 rd.bin
-        sf erase 0x003C0000 0x00430000
-        sf write 0x82000000 0x003C0000 0x00430000
-		
-
+3）内核 (zImage == uImage)
 mw.b 0x82000000 ff 0x002f0000;tftp 0x82000000 zImage;sf probe 0;sf erase 0x000B0000 0x002f0000;sf write 0x82000000 0x000B0000 0x002f0000
 
+4)文件系统
 mw.b 0x82000000 ff 0x00430000;tftp 0x82000000 rd.bin;sf probe 0;sf erase 0x003C0000 0x00430000;sf write 0x82000000 0x003C0000 0x00430000
-	
-mw.b 0x82000000 ff 0x00010000;sf probe 0;sf read 0x82000000 0x00040000 0x00010000;sf erase 0x00800000 0x00010000;sf write 0x82000000 0x00800000 0x00010000
 
-sf probe 0;sf erase 0x007D0000 0x00010000;sf write 0x82000000 0x007D0000 0x00010000
-	
-	 000B3F00 00014BFF
-	 mw.l 0x82000000 0x003F0B00
-	 mw.l 0x82000004 0xFF4B0100
+5)vendor
+mw.b 0x82000000 ff 0x00010000;tftp 0x82000000 vendor.bin;sf probe 0;sf erase 0x007D0000 0x00010000;sf write 0x82000000 0x007D0000 0x00010000
+
 	 
 synochecksum-emu1 VERSION zImage updater uboot_NVR216.bin uboot_do_upd.sh rd.bin hda1.tgz indexdb.txz synohdpack_img.txz \
 packages/SurveillanceStation-hi3535-8.1.1-5408.spk packages/FileStation-hi3535-1.1.4-0123.spk \
