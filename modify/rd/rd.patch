@@ -1,8 +1,8 @@
 File rd_src/rootfs/dev/console is a character special file while file rd_modify/rootfs/dev/console is a character special file
 File rd_src/rootfs/dev/net/tun is a character special file while file rd_modify/rootfs/dev/net/tun is a character special file
 diff -uNr --no-dereference rd_src/rootfs/etc/passwd rd_modify/rootfs/etc/passwd
---- rd_src/rootfs/etc/passwd	2021-10-17 13:41:41.630595610 +0000
-+++ rd_modify/rootfs/etc/passwd	2021-10-17 13:29:20.434297681 +0000
+--- rd_src/rootfs/etc/passwd	2021-10-29 12:34:29.936698562 +0000
++++ rd_modify/rootfs/etc/passwd	2021-10-18 15:05:43.563632131 +0000
 @@ -1,4 +1,4 @@
 -root:x:0:0::/root:/bin/ash
 +root::0:0::/root:/bin/ash
@@ -17,8 +17,8 @@ diff -uNr --no-dereference rd_src/rootfs/etc/passwd rd_modify/rootfs/etc/passwd
 +admin::1024:100:System default user:/var/services/homes/admin:/bin/sh
  guest:x:1025:100:Guest:/nonexist:/usr/bin/nologin
 diff -uNr --no-dereference rd_src/rootfs/etc/rc rd_modify/rootfs/etc/rc
---- rd_src/rootfs/etc/rc	2021-10-17 13:41:41.633595603 +0000
-+++ rd_modify/rootfs/etc/rc	2021-10-17 13:29:20.434297681 +0000
+--- rd_src/rootfs/etc/rc	2021-10-29 12:34:29.938698559 +0000
++++ rd_modify/rootfs/etc/rc	2021-10-18 15:05:43.561632135 +0000
 @@ -312,12 +312,12 @@
  	[ -z "$ret" ]
  }
@@ -39,18 +39,18 @@ diff -uNr --no-dereference rd_src/rootfs/etc/rc rd_modify/rootfs/etc/rc
  if is_mtest_bootloader_support && is_bootloader_mtest_tested; then
  	sh -c "echo 9 > /dev/ttyS1"
 diff -uNr --no-dereference rd_src/rootfs/etc/rc.pinctrl_hi3535_aic31 rd_modify/rootfs/etc/rc.pinctrl_hi3535_aic31
---- rd_src/rootfs/etc/rc.pinctrl_hi3535_aic31	2021-10-17 13:41:41.633595603 +0000
-+++ rd_modify/rootfs/etc/rc.pinctrl_hi3535_aic31	2021-10-17 13:29:20.434297681 +0000
-@@ -110,5 +110,5 @@
+--- rd_src/rootfs/etc/rc.pinctrl_hi3535_aic31	2021-10-29 12:34:29.938698559 +0000
++++ rd_modify/rootfs/etc/rc.pinctrl_hi3535_aic31	2021-10-20 14:14:05.831300198 +0000
+@@ -109,6 +109,3 @@
+ himm 0x200f0190 0x2
  himm 0x200f0194 0x2
  
- 
 -
-+/etc.defaults/sysctl_asic.sh
- 
+-
+-
 diff -uNr --no-dereference rd_src/rootfs/etc/synoinfo.conf rd_modify/rootfs/etc/synoinfo.conf
---- rd_src/rootfs/etc/synoinfo.conf	2021-10-17 13:41:41.630595610 +0000
-+++ rd_modify/rootfs/etc/synoinfo.conf	2021-10-17 13:29:20.432297686 +0000
+--- rd_src/rootfs/etc/synoinfo.conf	2021-10-29 12:34:29.935698564 +0000
++++ rd_modify/rootfs/etc/synoinfo.conf	2021-10-18 15:05:43.559632140 +0000
 @@ -30,7 +30,7 @@
  support_fw_security="yes"
  support_directory_service="yes"
@@ -103,7 +103,7 @@ diff -uNr --no-dereference rd_src/rootfs/etc/synoinfo.conf rd_modify/rootfs/etc/
  esataportcfg="0x4"
 diff -uNr --no-dereference rd_src/rootfs/etc/sysctl_asic.sh rd_modify/rootfs/etc/sysctl_asic.sh
 --- rd_src/rootfs/etc/sysctl_asic.sh	1970-01-01 00:00:00.000000000 +0000
-+++ rd_modify/rootfs/etc/sysctl_asic.sh	2021-10-17 13:29:20.434297681 +0000
++++ rd_modify/rootfs/etc/sysctl_asic.sh	2021-10-18 15:05:43.562632133 +0000
 @@ -0,0 +1,64 @@
 +#!/bin/sh
 +
@@ -169,8 +169,38 @@ diff -uNr --no-dereference rd_src/rootfs/etc/sysctl_asic.sh rd_modify/rootfs/etc
 +himm 0x120101f4 0x0E390000;
 +himm 0x12010274 0x0E390000;
 +
+diff -uNr --no-dereference rd_src/rootfs/linuxrc.syno rd_modify/rootfs/linuxrc.syno
+--- rd_src/rootfs/linuxrc.syno	2021-10-29 12:34:29.615698987 +0000
++++ rd_modify/rootfs/linuxrc.syno	2021-10-29 12:25:42.323460880 +0000
+@@ -295,6 +295,25 @@
+         Exit 1 "DISK NOT INSTALLED"
+ fi
+ 
++
++# Set pin mux for HI3535
++if [ "hi3535" == `/bin/get_key_value /etc.defaults/synoinfo.conf unique | cut -d"_" -f2` ]; then
++    cd /usr/sbin/
++	./btools -i
++	cd /usr/lib/modules/
++	
++	insmod ehci-hcd.ko
++	insmod ohci-hcd.ko
++	insmod xhci-hcd.ko
++	insmod usb-storage.ko
++	
++	echo "[SYNO] set pin mux for hi3535 " > /dev/kmsg
++	. /etc/rc.clkcfg_hi3535 > /dev/null || echo "[SYNO] fail to run rc.clkcfg_hi3535" > /dev/kmsg
++	. /etc/rc.sysctl_hi3535 > /dev/null || echo "[SYNO] fail to run rc.sysctl_hi3535" > /dev/kmsg
++	. /etc/rc.pinctrl_hi3535_aic31 > /dev/null || echo "[SYNO] fail to run rc.pinctrl_hi3535_aic31" > /dev/kmsg
++	. /etc/sysctl_asic.sh > /dev/null || echo "[SYNO] fail to run sysctl_asic.sh" > /dev/kmsg
++fi
++
+ #
+ # if we use initramfs, it will not pass kernel md autodetect path,
+ # so we need to assemble md0 now.
 Binary files rd_src/rootfs/usr/lib/modules/cdc-acm.ko and rd_modify/rootfs/usr/lib/modules/cdc-acm.ko differ
 Binary files rd_src/rootfs/usr/lib/modules/ehci-hcd.ko and rd_modify/rootfs/usr/lib/modules/ehci-hcd.ko differ
 Binary files rd_src/rootfs/usr/lib/modules/ohci-hcd.ko and rd_modify/rootfs/usr/lib/modules/ohci-hcd.ko differ
 Binary files rd_src/rootfs/usr/lib/modules/usb-storage.ko and rd_modify/rootfs/usr/lib/modules/usb-storage.ko differ
 Binary files rd_src/rootfs/usr/lib/modules/xhci-hcd.ko and rd_modify/rootfs/usr/lib/modules/xhci-hcd.ko differ
+Binary files rd_src/rootfs/usr/sbin/btools and rd_modify/rootfs/usr/sbin/btools differ
