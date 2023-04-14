@@ -38,24 +38,61 @@ ver=U-Boot 2010.06 (Jun 27 2017 - 11:57:38)
 jpeg_addr=0xB8000000
 vobuf=0xB9000000
 
-bootargs=console=ttyS0,115200 ip=off mem=320M syno_hw_version=NVR216 syno_phys_memsize=512 initrd=0x82000000 root=/dev/md0 rw init=/sbin/init mtdparts=hi_sfc:704k(RedBoot),3008k(zImage),4288k(rd.gz),64k(vendor),64k(RedBoot+Config),-(FIS+directory) hd_power_on_seq=2 ihd_num=2 netif_num=2 flash_size=8
+### syno nvr216 启动参数设置
+```
+setenv spi_pt_addr_logo 0x0080000 
+setenv spi_pt_size_logo 14315 
+setenv spi_pt_addr_kernel 0x00B0000 
 
-setenv bootargs console=ttyS0,115200 mem=320M syno_hw_version=NVR216 syno_phys_memsize=512 initrd=0x82000000 root=/dev/md0 rw init=/sbin/init mtdparts=hi_sfc:704k(RedBoot),3008k(zImage),4288k(rd.gz),64k(vendor),64k(RedBoot+Config),-(FIS+directory) hd_power_on_seq=2 ihd_num=5 netif_num=1 flash_size=16;
+setenv spi_pt_size_kernel 0x02F0000 
+setenv spi_pt_addr_fs 0x03A0000 
+setenv spi_pt_size_fs 0x0430000 
 
-tftp 0x82000000 zImage;tftp 0x92000000 rd.bin;bootm 0x82000000 0x92000000
+setenv loadaddr_kernel 0x82000000 
+setenv loadaddr_rootfs 0x92000000 
+setenv syno_mem 640M 
 
-setenv ipaddr 192.168.50.126;setenv serverip 192.168.50.118;setenv bootargs console=ttyS0,115200 mem=320M syno_hw_version=NVR216 syno_phys_memsize=512 initrd=0x82000000 root=/dev/md0 rw init=/sbin/init mtdparts=hi_sfc:704k(RedBoot),3008k(zImage),4288k(rd.gz),64k(vendor),64k(RedBoot+Config),-(FIS+directory) hd_power_on_seq=2 ihd_num=5 netif_num=1 flash_size=16;
+setenv syno_hw_version NVR216 
+setenv syno_phys_memsize 1024 
+setenv syno_extra_args ' ' 
 
-tftp 0x82000000 zImage;tftp 0x92000000 rd.bin;bootm 0x82000000 0x92000000
+setenv syno_hdd_powerup_seq 2 
+setenv syno_net_if_num 1 
+setenv vo_luma 70 
 
-setenv bootcmd 'sf probe 0;sf read 82000000 0x000B0000 0x002f0000;sf read 84000000 0x003A0000 0x00430000;bootm 0x82000000 0x84000000'
+setenv vo_contrast 50 
+setenv jpeg_size 82709 
+setenv jpeg_addr 0xB8000000 
 
-Creating 6 MTD partitions on "hi_sfc":
-0x000000000000-0x0000000b0000 : "RedBoot"
-0x0000000b0000-0x0000003a0000 : "zImage"
-0x0000003a0000-0x0000007d0000 : "rd.gz"
-0x0000007d0000-0x0000007e0000 : "vendor"
-0x0000007e0000-0x0000007f0000 : "RedBoot+Config"
+setenv vobuf 0xB9000000 
+setenv syno_boot_dev '/dev/md0 rw init=/sbin/init'
+setenv syno_showlogo 'setvobg 0 0x00000000;startvo 0 36 10;setenv jpeg_addr 0xB8000000;setenv vobuf 0xB9000000;sf probe 0;sf read ${jpeg_addr} ${spi_pt_addr_logo} ${spi_pt_size_logo};decjpg; syno_startgx 0 ${vobuf};'
+
+setenv syno_mtd_layout 'hinand:1M(RedBoot),8M(zImage),10M(rd.gz),128K(vendor),128K(RedBoot+Config),9M(FIS+directory),-(user)'
+setenv mtdparts mtdparts=${syno_mtd_layout}
+setenv syno_bootargs 'setenv bootargs console=ttyS0,115200 ip=off mem=${syno_mem} syno_hw_version=${syno_hw_version} syno_phys_memsize=${syno_phys_memsize} initrd=${loadaddr_kernel} root=${syno_boot_dev} mtdparts=hi_sfc:2M(boot);${syno_mtd_layout} hd_power_on_seq=${syno_hdd_powerup_seq} ihd_num=${syno_hdd_powerup_seq} netif_num=${syno_net_if_num} flash_size=8 ${syno_extra_args}' 
+
+setenv syno_boot 'nand read ${loadaddr_kernel} zImage ;nand read ${loadaddr_rootfs} rd.gz;bootm ${loadaddr_kernel} ${loadaddr_rootfs}; '
+setenv bootcmd 'run syno_showlogo; run syno_bootargs; run syno_boot'
+
+```
+
+## 通过串口网口烧录
+
+nand erase RedBoot;tftp 0x82000000 uboot_NVR216.bin;nand write 0x82000000 RedBoot;
+
+mw.b 0x82000000 ff 0x002f0000;tftp 0x82000000 u-boot-hi3535.bin;sf probe 0;sf erase 0x00 0x00080000;sf write 0x82000000 0x00000000 0x00080000
+
+nand erase zImage;tftp 0x82000000 zImage;nand write 0x82000000 zImage;
+
+nand erase zImage;tftp 0x82000000 uImage_hi3535;nand write 0x82000000 zImage;
+
+nand erase rd.gz;tftp 0x82000000 rd.bin;nand write 0x82000000 rd.gz;
+
+nand erase vendor;tftp 0x82000000 vendor.bin;nand write 0x82000000 vendor;
+
+nand erase RedBoot+Config;tftp 0x82000000 env.bin;nand write 0x82000000 RedBoot+Config;
+
 
 dd if=rd.bin of=ramdisk.lzma bs=64 skip=1;lzma -d ramdisk.lzma
 
