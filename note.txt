@@ -42,10 +42,13 @@ bootargs=console=ttyS0,115200 ip=off mem=320M syno_hw_version=NVR216 syno_phys_m
 
 setenv bootargs console=ttyS0,115200 mem=320M syno_hw_version=NVR216 syno_phys_memsize=512 initrd=0x82000000 root=/dev/md0 rw init=/sbin/init mtdparts=hi_sfc:704k(RedBoot),3008k(zImage),4288k(rd.gz),64k(vendor),64k(RedBoot+Config),-(FIS+directory) hd_power_on_seq=2 ihd_num=5 netif_num=1 flash_size=16;
 
-tftp 0x82000000 uImage;tftp 0x92000000 rd.bin;bootm 0x82000000 0x92000000
+tftp 0x82000000 zImage;tftp 0x92000000 rd.bin;bootm 0x82000000 0x92000000
 
+setenv ipaddr 192.168.50.126;setenv serverip 192.168.50.118;setenv bootargs console=ttyS0,115200 mem=320M syno_hw_version=NVR216 syno_phys_memsize=512 initrd=0x82000000 root=/dev/md0 rw init=/sbin/init mtdparts=hi_sfc:704k(RedBoot),3008k(zImage),4288k(rd.gz),64k(vendor),64k(RedBoot+Config),-(FIS+directory) hd_power_on_seq=2 ihd_num=5 netif_num=1 flash_size=16;
 
-setenv bootcmd 'sf probe 0;sf read 82000000 0x000B0000 0x002f0000;sf read 84000000 0x003C0000 0x00430000;bootm 0x82000000 0x84000000'
+tftp 0x82000000 zImage;tftp 0x92000000 rd.bin;bootm 0x82000000 0x92000000
+
+setenv bootcmd 'sf probe 0;sf read 82000000 0x000B0000 0x002f0000;sf read 84000000 0x003A0000 0x00430000;bootm 0x82000000 0x84000000'
 
 Creating 6 MTD partitions on "hi_sfc":
 0x000000000000-0x0000000b0000 : "RedBoot"
@@ -66,13 +69,13 @@ sudo diff -uNr --no-dereference  rd_src/rootfs rd_modify/rootfs > rd.patch
 
 sudo patch -p2 < ../../rd.patch
 
-sudo diff -uNr hda1_src  hda1_modify > hda1.patch
+sudo diff -uNr --no-dereference hda1_src hda1_modify > hda1.patch
 
 3）内核 (zImage == uImage)
 mw.b 0x82000000 ff 0x002f0000;tftp 0x82000000 zImage;sf probe 0;sf erase 0x000B0000 0x002f0000;sf write 0x82000000 0x000B0000 0x002f0000
 
 4)文件系统
-mw.b 0x82000000 ff 0x00430000;tftp 0x82000000 rd.bin;sf probe 0;sf erase 0x003C0000 0x00430000;sf write 0x82000000 0x003C0000 0x00430000
+mw.b 0x82000000 ff 0x00430000;tftp 0x82000000 rd.bin;sf probe 0;sf erase 0x003A0000 0x00430000;sf write 0x82000000 0x003A0000 0x00430000
 
 5)vendor
 mw.b 0x82000000 ff 0x00010000;tftp 0x82000000 vendor.bin;sf probe 0;sf erase 0x007D0000 0x00010000;sf write 0x82000000 0x007D0000 0x00010000
@@ -151,6 +154,9 @@ Currently defined functions:
 
 docker run -it -v /volume3/docker/opt/dsm/spksrc:/spksrc --name spksrc synocommunity/spksrc /bin/bash
 
+docker run -it -v /volume3/docker/opt/dsm/spksrc:/spksrc  synocommunity/spksrc /bin/bash
+
+docker run -it -v /root/spksrc:/spksrc synocommunity/spksrc /bin/bash
 
 
 Synology DS Default Reset Util.
@@ -162,3 +168,164 @@ Usage: synodsdefault
 root@LeeStationNVR:/# sudo /usr/syno/sbin/synodsdefault ==fact
 root@LeeStationNVR:/# sudo /usr/syno/sbin/synodsdefault --reinstall
 Success.
+
+
+
+hisilicon # print
+bootdelay=1
+baudrate=115200
+bootfile="uImage"
+restore=1
+da=mw.b 0x82000000 ff 1000000;tftp 0x82000000 u-boot.bin.img;sf probe 0;flwrite
+du=mw.b 0x82000000 ff 1000000;tftp 0x82000000 user-x.cramfs.img;sf probe 0;flwrite
+dr=mw.b 0x82000000 ff 1000000;tftp 0x82000000 romfs-x.cramfs.img;sf probe 0;flwrite
+dw=mw.b 0x82000000 ff 1000000;tftp 0x82000000 web-x.cramfs.img;sf probe 0;flwrite
+dl=mw.b 0x82000000 ff 1000000;tftp 0x82000000 logo-x.cramfs.img;sf probe 0;flwrite
+dc=mw.b 0x82000000 ff 1000000;tftp 0x82000000 custom-x.cramfs.img;sf probe 0;flwrite
+up=mw.b 0x82000000 ff 1000000;tftp 0x82000000 update.img;sf probe 0;flwrite
+tk=mw.b 0x82000000 ff 1000000;tftp 0x82000000 zImage.img; bootm 0x82000000
+dd=mw.b 0x82000000 ff 1000000;tftp 0x82000000 mtd-x.jffs2.img;sf probe 0;flwrite
+ethaddr=00:0b:3f:00:00:01
+appSystemLanguage=SimpChinese
+appVideoStandard=PAL
+appCloudExAbility=ucsEECVlyik=
+bootargs=console=ttyS0,115200 mem=320M syno_hw_version=NVR216 syno_phys_memsize=512 initrd=0x82000000 root=/dev/md0 rw init=/sbin/init mtdparts=hi_sfc:704k(RedBoot),3008k(zImage),4288k(rd.gz),64k(vendor),64k(RedBoot+Config),-(FIS+directory) hd_power_on_seq=2 ihd_num=5 netif_num=1 flash_size=16
+filesize=4042CE
+fileaddr=82000000
+gatewayip=192.168.50.1
+netmask=255.255.255.0
+ipaddr=192.168.50.83
+serverip=192.168.50.118
+bootcmd=sf probe 0;sf read 82000000 0x000B0000 0x002f0000;sf read 84000000 0x003A0000 0x00430000;bootm 0x82000000 0x84000000
+stdin=serial
+stdout=serial
+stderr=serial
+verify=n
+ver=U-Boot 2010.06-svn1043 (May 02 2018 - 21:08:24)
+
+Environment size: 1539/65532 bytes
+
+
+
+
+setenv bootargs console=ttyS0,115200 mem=512M syno_hw_version=NVR216 syno_phys_memsize=512  root=/dev/sda1 rw rootwait init=/sbin/init mtdparts=hi_sfc:704k(RedBoot),3008k(zImage),4288k(rd.gz),64k(vendor),64k(RedBoot+Config),-(FIS+directory) hd_power_on_seq=2 ihd_num=5 netif_num=1 flash_size=16;
+
+setenv bootcmd 'tftp 0x82000000 uImage;bootm 0x82000000'
+
+
+setenv bootargs console=ttyS0,115200 mem=512M syno_hw_version=NVR216 syno_phys_memsize=512  root=/dev/sdq2 rw rootwait rootfstype=ext4 init=/sbin/init mtdparts=hi_sfc:704k(RedBoot),3008k(zImage),4288k(rd.gz),64k(vendor),64k(RedBoot+Config),-(FIS+directory) hd_power_on_seq=2 ihd_num=5 netif_num=1 flash_size=16;
+
+setenv bootargs console=ttyS0,115200 mem=512M syno_hw_version=NVR216 syno_phys_memsize=512  root=/dev/sdq2 rw rootwait rootfstype=ext3 init=/sbin/init mtdparts=hi_sfc:704k(RedBoot),3008k(zImage),4288k(rd.gz),64k(vendor),64k(RedBoot+Config),-(FIS+directory) hd_power_on_seq=2 ihd_num=5 netif_num=1 flash_size=16;
+
+
+setenv bootcmd 'usb start; fatload usb 0:1 0x82000000 uImage; bootm 0x82000000'
+
+setenv bootcmd 'usb start; fatload usb 0:2 0x82000000 uImage; bootm 0x82000000'
+
+
+DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true LC_ALL=C LANGUAGE=C LANG=C chroot /mnt
+
+setenv bootargs console=ttyS0,115200 mem=320M syno_hw_version=NVR216 syno_phys_memsize=512 initrd=0x82000000 root=/dev/md0 rw init=/sbin/init mtdparts=hi_sfc:704k(RedBoot),3008k(zImage),4288k(rd.gz),64k(vendor),64k(RedBoot+Config),-(FIS+directory) hd_power_on_seq=2 ihd_num=5 netif_num=1 flash_size=16;
+
+sf probe 0;sf read 82000000 0x000B0000 0x002f0000;sf read 84000000 0x003A0000 0x00430000;bootm 0x82000000 0x84000000
+
+
+auto eth0
+iface eth0 inet dhcp
+
+
+sudo debootstrap --arch=armel --foreign --include=sudo,vim,telnetd,net-tools,wget,transmission-common,ssh,samba,nfs-common bullseye debian_bullseye http://mirrors.ustc.edu.cn/debian/
+
+sudo cp /usr/bin/qemu-arm-static debian_bullseye/usr/bin
+
+sudo DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true LC_ALL=C LANGUAGE=C LANG=C chroot debian_bullseye debootstrap/debootstrap --second-stage http://mirrors.ustc.edu.cn/debian/
+
+diff -c -a -b -B -r -q 
+diff -c -a -b -B -r -q /nfs/opt/dsm/TVT_DVR_HI3535/modify/hda1/hda1_modify/lib/ /lib | grep diff
+
+sudo debootstrap --arch=armel --foreign --include=qbittorrent-nox,usbutils,ntp,htop,sudo,vim,telnetd,net-tools,wget,transmission-common,ssh,samba,nfs-common buster debian_buster http://mirrors.ustc.edu.cn/debian/
+
+sudo cp /usr/bin/qemu-arm-static debian_buster/usr/bin
+
+sudo DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true LC_ALL=C LANGUAGE=C LANG=C chroot debian_buster debootstrap/debootstrap --second-stage http://mirrors.ustc.edu.cn/debian/
+
+mkdir -p /nfs;ifconfig eth0 192.168.50.86;mount -t nfs 192.168.50.100:/volume3/docker/ /nfs/
+
+DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true LC_ALL=C LANGUAGE=C LANG=C chroot debian_bullseye debootstrap/debootstrap --second-stage http://mirrors.ustc.edu.cn/debian/
+
+U-Boot 2010.06 (Jun 26 2014 - 17:29:29)
+
+NAND:  Check nand flash controller v504. found
+Special NAND id table Version 1.36
+Nand ID: 0x98 0xD1 0x90 0x15 0x76 0x14 0x01 0x00
+Block:128KB Page:2KB Chip:128MB*1 OOB:64B ECC:4bits/512Byte 
+128 MiB
+Check spi flash controller v350... Found
+Spi(cs1) ID: 0xC2 0x20 0x15 0xC2 0x20 0x15
+Spi(cs1): Block:64KB Chip:2MB Name:"MX25L1606E"
+*** Warning - bad CRC, using default environment
+
+In:    serial
+Out:   serial
+Err:   serial
+current hi3535 version 201312131026
+cur device nand size 131072, spi size 2097152
+current used param offset 11111111111111111
+current do_check_flash_boot_param
+current prod net 1000m
+init gpio led setting
+dev 0 set background color!
+dev 2 set background color!
+dev 0 opened!
+dev 2 opened!
+jpeg decoding ...
+<<addr=0x80080000, size=0x9c13, vobuf=0x8fd00000>>
+mmu_enable
+<<imgwidth=480, imgheight=320, linebytes=960>>
+decode success!!!!
+dev 0 set background color!
+dev 2 set background color!
+dev 0 opened!
+vo hd 0 end
+dev 2 opened!
+vo cvbs end
+graphic layer 0 opened!
+graphic layer 2 opened!
+USB:   scanning bus for devices... 1 USB Device(s) found
+0 Storage Device(s) found
+MAC:   00-00-23-34-45-66
+Hit any key to stop autoboot:  0 
+hisilicon # print
+bootdelay=1
+baudrate=115200
+ethaddr=00:00:23:34:45:66
+ipaddr=192.168.1.10
+serverip=192.168.1.2
+netmask=255.255.254.0
+bootfile="uImage"
+stdin=serial
+stdout=serial
+stderr=serial
+verify=n
+bootargs=mem=496M console=ttyAMA0,115200 root=/dev/mtdblock2 rootfstype=yaffs2 mtdparts=hi_sfc:2M(boot);hinand:4M(kernel),64M(rootfs),28M(user),32M(nva010000)
+bootcmd=nand read 0x82000000 0x0 0x400000;bootm 0x82000000
+phyintfx=0
+jpeg_addr=0x80080000
+jpeg_size=0x9c13
+vobuf=0x8fd00000
+ver=U-Boot 2010.06 (Jun 26 2014 - 17:29:29)
+
+Environment size: 513/131068 byte
+
+
+setenv bootargs root=LABEL=ROOTFS rootflags=data=writeback rw console=ttyAML0,115200n8 console=tty0 no_console_suspend consoleblank=0 fsck.fix=yes fsck.repair=yes net.ifnames=0
+
+fatload usb 0 ${dtb_mem_addr} dtb/amlogic/s905l2-stb.img
+fatload usb 0 ${loadaddr} uInitrd
+fatload usb 0 ${loadaddr} zimage
+if fatload usb 0 0x1000000 u-boot.ext; then go 0x1000000; fi;
+bootm ${loadaddr}  ${dtb_mem_addr}
+
+docker run -d -p 9000:9000 --name portainer -v /var/run/docker.sock:/var/run/docker.sock -v portainer_data:/data portainer/portainer:linux-arm64
+
+sed -i s/"string1"/"string2"/g `grep "string1" -rl ./`
