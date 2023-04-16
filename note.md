@@ -1,3 +1,5 @@
+### syno NVR216默认的UBOOT启动参数
+```
 bootcmd=run syno_showlogo; run syno_bootargs; run bootspi
 bootdelay=1
 baudrate=115200
@@ -38,54 +40,71 @@ ver=U-Boot 2010.06 (Jun 27 2017 - 11:57:38)
 jpeg_addr=0xB8000000
 vobuf=0xB9000000
 
-### syno nvr216 启动参数设置
 ```
-setenv spi_pt_addr_logo 0x0080000 
-setenv spi_pt_size_logo 14315 
-setenv spi_pt_addr_kernel 0x00B0000 
+### syno nvr216 启动参数设置命令  
+```
+setenv spi_pt_addr_logo 0x000C0000 
+setenv spi_pt_size_logo 0x00040000  
+setenv jpeg_size 0x00040000 
 
-setenv spi_pt_size_kernel 0x02F0000 
+setenv jpeg_addr 0xB8000000 
+setenv serverip 192.168.50.112 
+
+setenv spi_pt_addr_kernel 0x00B0000 
+setenv spi_pt_size_kernel 0x02F0000
+setenv loadaddr_kernel 0x82000000
+ 
 setenv spi_pt_addr_fs 0x03A0000 
 setenv spi_pt_size_fs 0x0430000 
-
-setenv loadaddr_kernel 0x82000000 
 setenv loadaddr_rootfs 0x92000000 
-setenv syno_mem 640M 
 
+setenv vo_luma 70 
+setenv vo_contrast 50 
+setenv vobuf 0xB9000000 
+
+setenv syno_mem 640M 
 setenv syno_hw_version NVR216 
 setenv syno_phys_memsize 1024 
-setenv syno_extra_args ' ' 
 
+setenv syno_extra_args ' ' 
 setenv syno_hdd_powerup_seq 2 
 setenv syno_net_if_num 1 
-setenv vo_luma 70 
 
-setenv vo_contrast 50 
-setenv jpeg_size 82709 
-setenv jpeg_addr 0xB8000000 
-
-setenv vobuf 0xB9000000 
 setenv syno_boot_dev '/dev/md0 rw init=/sbin/init'
-setenv syno_showlogo 'setvobg 0 0x00000000;startvo 0 36 10;setenv jpeg_addr 0xB8000000;setenv vobuf 0xB9000000;sf probe 0;sf read ${jpeg_addr} ${spi_pt_addr_logo} ${spi_pt_size_logo};decjpg; syno_startgx 0 ${vobuf};'
+setenv syno_showlogo 'setvobg 0 0x00000000;startvo 0 36 10;sf probe 0;sf read ${jpeg_addr} ${spi_pt_addr_logo} ${spi_pt_size_logo};decjpg; startgx 0 ${vobuf} 3840 0 0 1920 1080;'
 
 setenv syno_mtd_layout 'hinand:1M(RedBoot),8M(zImage),10M(rd.gz),128K(vendor),128K(RedBoot+Config),9M(FIS+directory),-(user)'
 setenv mtdparts mtdparts=${syno_mtd_layout}
-setenv syno_bootargs 'setenv bootargs console=ttyS0,115200 ip=off mem=${syno_mem} syno_hw_version=${syno_hw_version} syno_phys_memsize=${syno_phys_memsize} initrd=${loadaddr_kernel} root=${syno_boot_dev} mtdparts=hi_sfc:2M(boot);${syno_mtd_layout} hd_power_on_seq=${syno_hdd_powerup_seq} ihd_num=${syno_hdd_powerup_seq} netif_num=${syno_net_if_num} flash_size=8 ${syno_extra_args}' 
+
+setenv syno_bootargs 'setenv bootargs console=ttyS0,115200 ip=off mem=${syno_mem} syno_hw_version=${syno_hw_version} syno_phys_memsize=${syno_phys_memsize} initrd=${loadaddr_kernel} root=${syno_boot_dev} mtdparts=${syno_mtd_layout} hd_power_on_seq=${syno_hdd_powerup_seq} ihd_num=${syno_hdd_powerup_seq} netif_num=${syno_net_if_num} flash_size=128 ${syno_extra_args}' 
 
 setenv syno_boot 'nand read ${loadaddr_kernel} zImage ;nand read ${loadaddr_rootfs} rd.gz;bootm ${loadaddr_kernel} ${loadaddr_rootfs}; '
 setenv bootcmd 'run syno_showlogo; run syno_bootargs; run syno_boot'
 
 ```
 
-## 通过串口网口烧录
+### 通过串口网口烧录固件
 
+#### 一、NOR UBOOT和启动LOGO烧录
+>  NOR FLASH分配： boot 512KB + 256KB ENV + 256KB LOGO + 1024KB NULL
+
+##### UBOOT烧录
+```
+mw.b 0x82000000 ff 0x002f0000;tftp 0x82000000 uboot_NVR216.bin;sf probe 0;sf erase 0x00 0x00080000;sf write 0x82000000 0x00000000 0x00080000
+
+```
+##### 启动LOGO烧录，logo限制为1080P大小的JPG图片，大小不超过256KB
+```
+mw.b 0x82000000 ff 0x002f0000;tftp 0x82000000 logo.jpg;sf probe 0;sf erase 0x000C0000 0x00040000;sf write 0x82000000 0x000C0000 0x00040000
+
+```
+
+#### 二、NAND 128MB DSM引导系统烧录
+> 1M(RedBoot),8M(zImage),10M(rd.gz),128K(vendor),128K(RedBoot+Config),9M(FIS+directory),-(user)
+```
 nand erase RedBoot;tftp 0x82000000 uboot_NVR216.bin;nand write 0x82000000 RedBoot;
 
-mw.b 0x82000000 ff 0x002f0000;tftp 0x82000000 u-boot-hi3535.bin;sf probe 0;sf erase 0x00 0x00080000;sf write 0x82000000 0x00000000 0x00080000
-
 nand erase zImage;tftp 0x82000000 zImage;nand write 0x82000000 zImage;
-
-nand erase zImage;tftp 0x82000000 uImage_hi3535;nand write 0x82000000 zImage;
 
 nand erase rd.gz;tftp 0x82000000 rd.bin;nand write 0x82000000 rd.gz;
 
@@ -93,6 +112,7 @@ nand erase vendor;tftp 0x82000000 vendor.bin;nand write 0x82000000 vendor;
 
 nand erase RedBoot+Config;tftp 0x82000000 env.bin;nand write 0x82000000 RedBoot+Config;
 
+```
 
 dd if=rd.bin of=ramdisk.lzma bs=64 skip=1;lzma -d ramdisk.lzma
 
@@ -108,14 +128,6 @@ sudo patch -p2 < ../../rd.patch
 
 sudo diff -uNr --no-dereference hda1_src hda1_modify > hda1.patch
 
-3）内核 (zImage == uImage)
-mw.b 0x82000000 ff 0x002f0000;tftp 0x82000000 zImage;sf probe 0;sf erase 0x000B0000 0x002f0000;sf write 0x82000000 0x000B0000 0x002f0000
-
-4)文件系统
-mw.b 0x82000000 ff 0x00430000;tftp 0x82000000 rd.bin;sf probe 0;sf erase 0x003A0000 0x00430000;sf write 0x82000000 0x003A0000 0x00430000
-
-5)vendor
-mw.b 0x82000000 ff 0x00010000;tftp 0x82000000 vendor.bin;sf probe 0;sf erase 0x007D0000 0x00010000;sf write 0x82000000 0x007D0000 0x00010000
 
 	 
 synochecksum-emu1 VERSION zImage updater uboot_NVR216.bin uboot_do_upd.sh rd.bin hda1.tgz indexdb.txz synohdpack_img.txz \
@@ -135,59 +147,6 @@ texts/sve/strings texts/tha/strings texts/trk/strings > checksum.syno
 
 mkdir -p /nfs;ifconfig eth0 192.168.50.125;mount -t nfs 192.168.50.100:/volume3/docker/ /nfs/
 
-BusyBox v1.16.1 (2018-05-10 10:54:05 CST) multi-call binary.
-Copyright (C) 1998-2009 Erik Andersen, Rob Landley, Denys Vlasenko
-and others. Licensed under GPLv2.
-See source distribution for full notice.
-
-Usage: busybox [function] [arguments]...
-   or: function [arguments]...
-
-	BusyBox is a multi-call binary that combines many common Unix
-	utilities into a single executable.  Most people will create a
-	link to busybox for each function they wish to use and BusyBox
-	will act like whatever it was invoked as.
-
-Currently defined functions:
-	[, [[, , , , , , chattr, chgrp, , ,
-	, , , , , , , , , , ,
-	, egrep, , , , , fgrep, , ,
-	get_key_value, , , gunzip, , , , httpd,
-	, inetd, , , ip, ip, ipcalc, , , ,
-	klogd, , , logger, , , lsattr, , , ,
-	, , , , , nslookup, , , , ,
-	, , , , , , , , , , ,
-	, , , synodd, , , , , test,
-	, , , , , , unxz, , , , ,
-	xargs, xz, xzcat, , zcat
-	
-	
-	
-	adjtimex, arch, arp, arping, ash, awk, base64, basename, bc, beep,
-	blkdiscard, blkid, blockdev, bootchartd, cal, cat, chat, chmod, chown,
-	chpasswd, chroot, cksum, cmp, cp, crond, crontab, cryptpw, cut, date,
-	dc, dd, depmod, devmem, df, diff, dirname, dmesg, dnsd, dnsdomainname,
-	du, echo, env, ether-wake, expr, factor, false, fdisk, fgconsole, find,
-	flash_eraseall, flash_lock, flash_unlock, flashcp, free, fstrim, fsync,
-	ftpget, ftpput, fuser, getty, grep, groups, halt, head, hexedit,
-	hostid, hostname, hwclock, i2cdetect, i2cdump, i2cget, i2cset,
-	i2ctransfer, id, ifconfig, init, inotifyd, insmod, iostat, kill,
-	killall, less, linux32, linux64, linuxrc, ln, login, logname, ls,
-	lsmod, lsof, lspci, lsscsi, lsusb, makedevs, md5sum, mdev, mkdir,
-	mkdosfs, mke2fs, mkfifo, mkfs.vfat, mknod, mkpasswd, mkswap, mktemp,
-	modinfo, modprobe, more, mount, mountpoint, mv, netstat, nice, nologin,
-	nuke, passwd, paste, patch, pidof, ping, pivot_root, pkill, poweroff,
-	printenv, printf, ps, pwd, rdate, rdev, readprofile, reboot, renice,
-	reset, resize, resume, rev, rm, rmdir, rmmod, route, rtcwake, run-init,
-	runlevel, rx, script, scriptreplay, sed, seq, setarch, setconsole,
-	setkeycodes, setlogcons, setserial, setsid, sh, sha1sum, sha256sum,
-	sha3sum, sha512sum, showkey, sleep, smemcap, sort, split, stat,
-	strings, stty, su, sulogin, sum, swapoff, swapon, switch_root, sync,
-	sysctl, syslogd, tail, tar, taskset, tee, telnetd, tftp, time, timeout,
-	top, touch, tr, true, truncate, tty, ttysize, udhcpc, uevent, umount,
-	uname, uniq, unlink, unshare, uptime, usleep, uudecode, uuencode, vi,
-	vlock, volname, wall, watch, watchdog, wc, wget, which, who, whoami,
-	yes
 
 docker run -it -v /volume3/docker/opt/dsm/spksrc:/spksrc --name spksrc synocommunity/spksrc /bin/bash
 
@@ -204,45 +163,6 @@ Usage: synodsdefault
   --help Show this help.
 root@LeeStationNVR:/# sudo /usr/syno/sbin/synodsdefault ==fact
 root@LeeStationNVR:/# sudo /usr/syno/sbin/synodsdefault --reinstall
-Success.
-
-
-
-hisilicon # print
-bootdelay=1
-baudrate=115200
-bootfile="uImage"
-restore=1
-da=mw.b 0x82000000 ff 1000000;tftp 0x82000000 u-boot.bin.img;sf probe 0;flwrite
-du=mw.b 0x82000000 ff 1000000;tftp 0x82000000 user-x.cramfs.img;sf probe 0;flwrite
-dr=mw.b 0x82000000 ff 1000000;tftp 0x82000000 romfs-x.cramfs.img;sf probe 0;flwrite
-dw=mw.b 0x82000000 ff 1000000;tftp 0x82000000 web-x.cramfs.img;sf probe 0;flwrite
-dl=mw.b 0x82000000 ff 1000000;tftp 0x82000000 logo-x.cramfs.img;sf probe 0;flwrite
-dc=mw.b 0x82000000 ff 1000000;tftp 0x82000000 custom-x.cramfs.img;sf probe 0;flwrite
-up=mw.b 0x82000000 ff 1000000;tftp 0x82000000 update.img;sf probe 0;flwrite
-tk=mw.b 0x82000000 ff 1000000;tftp 0x82000000 zImage.img; bootm 0x82000000
-dd=mw.b 0x82000000 ff 1000000;tftp 0x82000000 mtd-x.jffs2.img;sf probe 0;flwrite
-ethaddr=00:0b:3f:00:00:01
-appSystemLanguage=SimpChinese
-appVideoStandard=PAL
-appCloudExAbility=ucsEECVlyik=
-bootargs=console=ttyS0,115200 mem=320M syno_hw_version=NVR216 syno_phys_memsize=512 initrd=0x82000000 root=/dev/md0 rw init=/sbin/init mtdparts=hi_sfc:704k(RedBoot),3008k(zImage),4288k(rd.gz),64k(vendor),64k(RedBoot+Config),-(FIS+directory) hd_power_on_seq=2 ihd_num=5 netif_num=1 flash_size=16
-filesize=4042CE
-fileaddr=82000000
-gatewayip=192.168.50.1
-netmask=255.255.255.0
-ipaddr=192.168.50.83
-serverip=192.168.50.118
-bootcmd=sf probe 0;sf read 82000000 0x000B0000 0x002f0000;sf read 84000000 0x003A0000 0x00430000;bootm 0x82000000 0x84000000
-stdin=serial
-stdout=serial
-stderr=serial
-verify=n
-ver=U-Boot 2010.06-svn1043 (May 02 2018 - 21:08:24)
-
-Environment size: 1539/65532 bytes
-
-
 
 
 setenv bootargs console=ttyS0,115200 mem=512M syno_hw_version=NVR216 syno_phys_memsize=512  root=/dev/sda1 rw rootwait init=/sbin/init mtdparts=hi_sfc:704k(RedBoot),3008k(zImage),4288k(rd.gz),64k(vendor),64k(RedBoot+Config),-(FIS+directory) hd_power_on_seq=2 ihd_num=5 netif_num=1 flash_size=16;
