@@ -171,9 +171,9 @@ diff -uNr --no-dereference rd_src/rootfs/etc/sysctl_asic.sh rd_modify/rootfs/etc
 +
 diff -uNr --no-dereference rd_src/rootfs/linuxrc.syno rd_modify/rootfs/linuxrc.syno
 --- rd_src/rootfs/linuxrc.syno	2021-10-29 12:34:29.615698987 +0000
-+++ rd_modify/rootfs/linuxrc.syno	2021-10-29 12:25:42.323460880 +0000
-@@ -295,6 +295,25 @@
-         Exit 1 "DISK NOT INSTALLED"
++++ rd_modify/rootfs/linuxrc.syno	2021-10-31 08:42:29.654122550 +0000
+@@ -239,13 +239,32 @@
+ 	done
  fi
  
 +
@@ -194,6 +194,22 @@ diff -uNr --no-dereference rd_src/rootfs/linuxrc.syno rd_modify/rootfs/linuxrc.s
 +	. /etc/rc.pinctrl_hi3535_aic31 > /dev/null || echo "[SYNO] fail to run rc.pinctrl_hi3535_aic31" > /dev/kmsg
 +	. /etc/sysctl_asic.sh > /dev/null || echo "[SYNO] fail to run sysctl_asic.sh" > /dev/kmsg
 +fi
++
+ if [ "$SupportDualhead" = "yes" ]; then
+ 	RootDevice=/dev/md0
+ 	SwapDevice=/dev/md1
+ 	ProcDiskList=`/usr/syno/bin/synodiskport -eunit 2>/dev/null`
+ elif [ "$SupportRAID" = "yes" ]; then
+ 	RootDevice=/dev/md0
+-	ProcDiskList=`/usr/syno/bin/synodiskport -internal 2>/dev/null`
++	ProcDiskList=`/usr/syno/bin/synodiskport -usb 2>/dev/null`
+ elif [ "$UniqueRD" = "kvmx64" ]; then
+ 	RootDevice=/dev/sda1
+ 	ProcDiskList=`/usr/syno/bin/synodiskport -internal 2>/dev/null`
+@@ -295,6 +314,7 @@
+         Exit 1 "DISK NOT INSTALLED"
+ fi
+ 
 +
  #
  # if we use initramfs, it will not pass kernel md autodetect path,
